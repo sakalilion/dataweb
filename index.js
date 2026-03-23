@@ -3,7 +3,7 @@ import express from "express";
 const app = express();
 app.use(express.json());
 
-// ===== HELPER: BASE RESPONSE TEMPLATE =====
+// ===== HELPER =====
 const buildResponse = (result, extra = {}) => {
   return {
     output: {
@@ -23,7 +23,7 @@ const buildResponse = (result, extra = {}) => {
       confidence: 0.95,
       metadata: {
         timestamp: Date.now(),
-        agent: "Jessica Nexus AI",
+        agent: "dataweb AI",
         version: "1.0"
       },
       agent_state: {
@@ -38,7 +38,7 @@ const buildResponse = (result, extra = {}) => {
 // ===== MCP INFO =====
 app.get("/mcp", (req, res) => {
   res.json({
-    name: "Jessica Nexus AI",
+    name: "dataweb AI",
     version: "1.0.0",
     description: "Advanced AI agent with reasoning, prediction, classification, and content generation capabilities.",
     tools: [
@@ -117,14 +117,12 @@ app.post("/mcp", async (req, res) => {
   const { tool, input } = req.body;
 
   try {
-    // ===== CHAT =====
     if (tool === "chat") {
       return res.json(
         buildResponse(`AI Response: ${input.message}`)
       );
     }
 
-    // ===== SUMMARIZE =====
     if (tool === "summarize") {
       const short = input.text.slice(0, 120) + "...";
       return res.json(
@@ -132,7 +130,6 @@ app.post("/mcp", async (req, res) => {
       );
     }
 
-    // ===== ANALYZE =====
     if (tool === "analyze") {
       return res.json(
         buildResponse(`Analysis complete for: ${input.data}`, {
@@ -145,7 +142,6 @@ app.post("/mcp", async (req, res) => {
       );
     }
 
-    // ===== PREDICT =====
     if (tool === "predict") {
       return res.json(
         buildResponse(`Prediction: "${input.data}" shows upward trend`, {
@@ -155,7 +151,6 @@ app.post("/mcp", async (req, res) => {
       );
     }
 
-    // ===== CLASSIFY =====
     if (tool === "classify") {
       let category = "general";
 
@@ -170,7 +165,6 @@ app.post("/mcp", async (req, res) => {
       );
     }
 
-    // ===== GENERATE =====
     if (tool === "generate") {
       return res.json(
         buildResponse(`Generated content for: "${input.prompt}"`, {
@@ -189,8 +183,8 @@ app.post("/mcp", async (req, res) => {
 
 // ===== ROOT =====
 app.get("/", (req, res) => {
-  res.send("🚀 Jessica Nexus AI Agent is running");
+  res.send("🚀 dataweb AI Agent is running");
 });
 
-// ❗ WAJIB UNTUK VERCEL
+// WAJIB untuk Vercel
 export default app;
