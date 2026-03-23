@@ -1,0 +1,32 @@
+{
+  "name": "dataweb AI",
+  "description": "High-performance AI agent with reasoning, prediction, classification, and automation.",
+  "url": "https://your-domain.vercel.app",
+  "version": "1.0.0",
+  "author": "dataweb",
+  "capabilities": [
+    "chat",
+    "tool-use",
+    "reasoning",
+    "prediction",
+    "classification",
+    "generation"
+  ],
+  "endpoints": {
+    "mcp": "https://your-domain.vercel.app/mcp"
+  },
+  "skills": [
+    {
+      "name": "AI Chat",
+      "description": "Natural conversation"
+    },
+    {
+      "name": "Prediction Engine",
+      "description": "Forecast outcomes"
+    },
+    {
+      "name": "Classification",
+      "description": "Categorize data"
+    }
+  ]
+}
