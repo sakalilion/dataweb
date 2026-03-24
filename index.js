@@ -5,270 +5,475 @@ import path from "path";
 const app = express();
 app.use(express.json());
 
-// ===== MEMORY =====
 const memory = {};
 
-// ===== MULTI AGENTS =====
 const agents = {
-  analyst: (input) => `📊 Analyst: trend detected in ${input}`,
-  strategist: (input) => `🧠 Strategist: plan created for ${input}`,
-  executor: (input) => `⚙️ Executor: task executed for ${input}`
+  analyst: (input) => `Analyst: trend detected in ${input}`,
+  strategist: (input) => `Strategist: plan created for ${input}`,
+  executor: (input) => `Executor: task executed for ${input}`
 };
 
-// ===== SERVE A2A FILE =====
-app.get("/.well-known/agent-card.json", (req, res) => {
-  const filePath = path.join(process.cwd(), ".well-known", "agent-card.json");
-  if (fs.existsSync(filePath)) {
-    res.setHeader("Content-Type", "application/json");
-    return res.sendFile(filePath);
+const serverInfo = {
+  name: "dataweb AI PRO",
+  version: "2.1.0"
+};
+
+const tools = [
+  {
+    name: "chat",
+    description: "Conversational AI",
+    inputSchema: {
+      type: "object",
+      properties: {
+        message: { type: "string", description: "Message to send to the AI" }
+      },
+      required: ["message"]
+    }
+  },
+  {
+    name: "analyze",
+    description: "Analyze data",
+    inputSchema: {
+      type: "object",
+      properties: {
+        data: { type: "string", description: "Data to analyze" }
+      },
+      required: ["data"]
+    }
+  },
+  {
+    name: "predict",
+    description: "Predict outcomes",
+    inputSchema: {
+      type: "object",
+      properties: {
+        data: { type: "string", description: "Input data for prediction" }
+      },
+      required: ["data"]
+    }
+  },
+  {
+    name: "classify",
+    description: "Classify text",
+    inputSchema: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "Text to classify" }
+      },
+      required: ["text"]
+    }
+  },
+  {
+    name: "generate",
+    description: "Generate content",
+    inputSchema: {
+      type: "object",
+      properties: {
+        prompt: { type: "string", description: "Prompt to generate from" }
+      },
+      required: ["prompt"]
+    }
+  },
+  {
+    name: "multi_agent",
+    description: "Run multi-agent collaboration",
+    inputSchema: {
+      type: "object",
+      properties: {
+        task: { type: "string", description: "Task shared with all agents" }
+      },
+      required: ["task"]
+    }
   }
-  res.status(404).json({ error: "agent-card.json not found" });
-});
+];
 
-// ===== HELPER =====
-const buildResponse = (result, session, extra = {}) => ({
-  output: {
-    steps: ["Input received","Analyzing","Processing","Generating"],
-    reasoning: {
-      intent: "detected",
-      processing: "applied",
-      validation: "ok"
-    },
-    result,
-    confidence: 0.98,
-    metadata: {
-      timestamp: Date.now(),
-      agent: "dataweb AI PRO"
-    },
-    agent_state: {
-      status: "active",
-      memory_size: memory[session]?.length || 0
-    },
-    performance: {
-      latency: Math.floor(Math.random() * 100),
-      tokens: Math.floor(Math.random() * 200)
-    },
-    ...extra
-  }
-});
-
-// ===== MCP STANDARD =====
-app.get("/mcp", (req, res) => {
-  res.json({
-    metadata: {
-      name: "dataweb AI PRO",
-      version: "2.0",
-      capabilities: ["reasoning","tool-use","multi-agent","automation"]
-    },
-
-    tools: [
+const prompts = [
+  {
+    name: "crypto_analysis",
+    description: "Analyze crypto market trends",
+    arguments: [
       {
-        type: "function",
-        function: {
-          name: "chat",
-          description: "Conversational AI",
-          parameters: {
-            type: "object",
-            properties: {
-              message: { type: "string" }
-            }
-          }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "analyze",
-          description: "Analyze data",
-          parameters: {
-            type: "object",
-            properties: {
-              data: { type: "string" }
-            }
-          }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "predict",
-          description: "Predict outcomes",
-          parameters: {
-            type: "object",
-            properties: {
-              data: { type: "string" }
-            }
-          }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "classify",
-          description: "Classify text",
-          parameters: {
-            type: "object",
-            properties: {
-              text: { type: "string" }
-            }
-          }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "generate",
-          description: "Generate content",
-          parameters: {
-            type: "object",
-            properties: {
-              prompt: { type: "string" }
-            }
-          }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "multi_agent",
-          description: "Run multi-agent collaboration",
-          parameters: {
-            type: "object",
-            properties: {
-              task: { type: "string" }
-            }
-          }
-        }
-      }
-    ],
-
-    prompts: [
-      {
-        name: "crypto_analysis",
-        description: "Analyze crypto trends"
-      },
-      {
-        name: "ai_strategy",
-        description: "Generate AI automation plan"
-      }
-    ],
-
-    resources: [
-      {
-        name: "market_data",
-        endpoint: "/resources/market"
-      },
-      {
-        name: "memory",
-        endpoint: "/resources/memory"
+        name: "asset",
+        description: "Ticker, coin, or market segment to analyze",
+        required: false
       }
     ]
+  },
+  {
+    name: "ai_strategy",
+    description: "Generate an AI automation strategy",
+    arguments: [
+      {
+        name: "goal",
+        description: "Primary business or product goal",
+        required: false
+      }
+    ]
+  }
+];
+
+const resources = [
+  {
+    uri: "resource://market-data",
+    name: "market_data",
+    description: "Mock market data generated by the server",
+    mimeType: "application/json"
+  },
+  {
+    uri: "resource://memory",
+    name: "memory",
+    description: "Conversation memory grouped by session",
+    mimeType: "application/json"
+  }
+];
+
+function getSessionId(req) {
+  return req.headers["x-session-id"] || "default";
+}
+
+function ensureSession(sessionId) {
+  if (!memory[sessionId]) {
+    memory[sessionId] = [];
+  }
+
+  return memory[sessionId];
+}
+
+function getMarketData() {
+  return Array.from({ length: 10 }, (_, index) => ({
+    symbol: `AI-${index}`,
+    price: Number((Math.random() * 1000).toFixed(2))
+  }));
+}
+
+function textContent(text) {
+  return {
+    content: [
+      {
+        type: "text",
+        text
+      }
+    ]
+  };
+}
+
+function rpcSuccess(id, result) {
+  return {
+    jsonrpc: "2.0",
+    id,
+    result
+  };
+}
+
+function rpcError(id, code, message, data) {
+  return {
+    jsonrpc: "2.0",
+    id: id ?? null,
+    error: {
+      code,
+      message,
+      ...(data ? { data } : {})
+    }
+  };
+}
+
+function buildLegacyResponse(result, sessionId, extra = {}) {
+  return {
+    output: {
+      steps: ["Input received", "Analyzing", "Processing", "Generating"],
+      reasoning: {
+        intent: "detected",
+        processing: "applied",
+        validation: "ok"
+      },
+      result,
+      confidence: 0.98,
+      metadata: {
+        timestamp: Date.now(),
+        agent: serverInfo.name
+      },
+      agent_state: {
+        status: "active",
+        memory_size: memory[sessionId]?.length || 0
+      },
+      performance: {
+        latency: Math.floor(Math.random() * 100),
+        tokens: Math.floor(Math.random() * 200)
+      },
+      ...extra
+    }
+  };
+}
+
+function executeTool(name, args = {}, sessionId = "default") {
+  const sessionMemory = ensureSession(sessionId);
+  sessionMemory.push({ tool: name, arguments: args, timestamp: Date.now() });
+
+  if (name === "chat") {
+    return textContent(`AI: ${args.message || "hello"}`);
+  }
+
+  if (name === "analyze") {
+    return textContent(`Analysis: ${args.data || "sample"}`);
+  }
+
+  if (name === "predict") {
+    return textContent(`Prediction: ${args.data || "sample"} -> upward bias`);
+  }
+
+  if (name === "classify") {
+    const text = (args.text || "").toLowerCase();
+    let category = "general";
+
+    if (text.includes("crypto")) {
+      category = "finance";
+    }
+
+    if (text.includes("ai")) {
+      category = "tech";
+    }
+
+    return textContent(`Category: ${category}`);
+  }
+
+  if (name === "generate") {
+    return textContent(`Generated: ${args.prompt || "default"}`);
+  }
+
+  if (name === "multi_agent") {
+    const task = args.task || "default task";
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: [
+            "Multi-agent collaboration complete.",
+            agents.analyst(task),
+            agents.strategist(task),
+            agents.executor(task)
+          ].join("\n")
+        }
+      ]
+    };
+  }
+
+  throw new Error(`Unknown tool: ${name}`);
+}
+
+function getPrompt(name, args = {}) {
+  if (name === "crypto_analysis") {
+    const asset = args.asset || "the current market";
+
+    return {
+      description: "Analyze crypto trends and highlight key signals.",
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `Analyze ${asset}. Cover trend, momentum, catalysts, and major risks.`
+          }
+        }
+      ]
+    };
+  }
+
+  if (name === "ai_strategy") {
+    const goal = args.goal || "improve automation";
+
+    return {
+      description: "Generate an actionable AI strategy prompt.",
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `Create an AI strategy focused on ${goal}. Include roadmap, quick wins, and success metrics.`
+          }
+        }
+      ]
+    };
+  }
+
+  throw new Error(`Unknown prompt: ${name}`);
+}
+
+function readResource(uri) {
+  if (uri === "resource://market-data") {
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({ data: getMarketData() }, null, 2)
+        }
+      ]
+    };
+  }
+
+  if (uri === "resource://memory") {
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify(memory, null, 2)
+        }
+      ]
+    };
+  }
+
+  throw new Error(`Unknown resource: ${uri}`);
+}
+
+function handleRpc(req, res) {
+  const { id = null, method, params = {} } = req.body || {};
+
+  if (!method) {
+    return res.status(400).json(rpcError(id, -32600, "Missing JSON-RPC method"));
+  }
+
+  try {
+    if (method === "initialize") {
+      const requestedVersion = typeof params.protocolVersion === "string"
+        ? params.protocolVersion
+        : "2024-11-05";
+
+      return res.json(rpcSuccess(id, {
+        protocolVersion: requestedVersion,
+        capabilities: {
+          tools: {},
+          prompts: {},
+          resources: {}
+        },
+        serverInfo,
+        instructions: "Use tools/list, prompts/list, and resources/list to inspect available capabilities."
+      }));
+    }
+
+    if (method === "ping") {
+      return res.json(rpcSuccess(id, {}));
+    }
+
+    if (method === "notifications/initialized") {
+      if (id === null) {
+        return res.status(202).end();
+      }
+
+      return res.json(rpcSuccess(id, {}));
+    }
+
+    if (method === "tools/list") {
+      return res.json(rpcSuccess(id, { tools }));
+    }
+
+    if (method === "tools/call") {
+      const sessionId = getSessionId(req);
+      const result = executeTool(params.name, params.arguments || {}, sessionId);
+      return res.json(rpcSuccess(id, result));
+    }
+
+    if (method === "prompts/list") {
+      return res.json(rpcSuccess(id, { prompts }));
+    }
+
+    if (method === "prompts/get") {
+      return res.json(rpcSuccess(id, getPrompt(params.name, params.arguments || {})));
+    }
+
+    if (method === "resources/list") {
+      return res.json(rpcSuccess(id, { resources }));
+    }
+
+    if (method === "resources/read") {
+      return res.json(rpcSuccess(id, readResource(params.uri)));
+    }
+
+    return res.status(404).json(rpcError(id, -32601, `Method not found: ${method}`));
+  } catch (error) {
+    return res.status(400).json(
+      rpcError(id, -32000, error instanceof Error ? error.message : "Internal error")
+    );
+  }
+}
+
+app.get("/.well-known/agent-card.json", (req, res) => {
+  const filePaths = [
+    path.join(process.cwd(), ".well-known", "agent-card.json"),
+    path.join(process.cwd(), ".well-know", "agent-card.json")
+  ];
+
+  for (const filePath of filePaths) {
+    if (fs.existsSync(filePath)) {
+      res.setHeader("Content-Type", "application/json");
+      return res.sendFile(filePath);
+    }
+  }
+
+  return res.status(404).json({ error: "agent-card.json not found" });
+});
+
+app.get("/mcp", (req, res) => {
+  res.json({
+    serverInfo,
+    protocol: "MCP over JSON-RPC 2.0",
+    transport: {
+      endpoint: "/mcp",
+      method: "POST",
+      contentType: "application/json"
+    },
+    capabilities: {
+      tools: {},
+      prompts: {},
+      resources: {}
+    },
+    tools,
+    prompts,
+    resources
   });
 });
 
-// ===== MCP EXECUTION =====
 app.post("/mcp", (req, res) => {
+  if (req.body?.jsonrpc === "2.0") {
+    return handleRpc(req, res);
+  }
+
   const tool = req.body?.tool || "chat";
   const input = req.body?.input || {};
-  const session = req.headers["x-session-id"] || "default";
-
-  if (!memory[session]) memory[session] = [];
-  memory[session].push(input);
+  const sessionId = getSessionId(req);
 
   try {
-    if (tool === "chat") {
-      return res.json(buildResponse(
-        `AI: ${input.message || "hello"}`,
-        session
-      ));
-    }
-
-    if (tool === "analyze") {
-      return res.json(buildResponse(
-        `Analysis: ${input.data || "sample"}`,
-        session
-      ));
-    }
-
-    if (tool === "predict") {
-      return res.json(buildResponse(
-        `Prediction: ${input.data || "sample"} ↑`,
-        session
-      ));
-    }
-
-    if (tool === "classify") {
-      const txt = (input.text || "").toLowerCase();
-      let cat = "general";
-      if (txt.includes("crypto")) cat = "finance";
-      if (txt.includes("ai")) cat = "tech";
-
-      return res.json(buildResponse(
-        `Category: ${cat}`,
-        session
-      ));
-    }
-
-    if (tool === "generate") {
-      return res.json(buildResponse(
-        `Generated: ${input.prompt || "default"}`,
-        session
-      ));
-    }
-
-    if (tool === "multi_agent") {
-      const task = input.task || "default task";
-
-      return res.json(buildResponse(
-        "Multi-agent done",
-        session,
-        {
-          agents: {
-            analyst: agents.analyst(task),
-            strategist: agents.strategist(task),
-            executor: agents.executor(task)
-          }
-        }
-      ));
-    }
-
-    return res.json(buildResponse("Default response", session));
-
+    const result = executeTool(tool, input, sessionId);
+    const text = result.content?.[0]?.text || "OK";
+    return res.json(buildLegacyResponse(text, sessionId));
   } catch {
-    return res.json(buildResponse("Recovered from error", session));
+    return res.status(400).json(buildLegacyResponse("Recovered from error", sessionId));
   }
 });
 
-// ===== RESOURCES =====
 app.get("/resources/market", (req, res) => {
-  res.json({
-    data: Array.from({ length: 10 }, (_, i) => ({
-      symbol: "AI-" + i,
-      price: (Math.random() * 1000).toFixed(2)
-    }))
-  });
+  res.json({ data: getMarketData() });
 });
 
 app.get("/resources/memory", (req, res) => {
   res.json(memory);
 });
 
-// ===== A2A =====
 app.post("/a2a", (req, res) => {
-  const { agent, task } = req.body;
+  const { agent, task } = req.body || {};
 
   if (!agents[agent]) {
-    return res.json({ error: "agent not found" });
+    return res.status(404).json({ error: "agent not found" });
   }
 
-  res.json({
+  return res.json({
     agent,
-    result: agents[agent](task),
+    result: agents[agent](task || "default task"),
     status: "ok"
   });
 });
 
-// ===== UI =====
 app.get("/", (req, res) => {
   res.send(`
   <html>
@@ -283,7 +488,7 @@ app.get("/", (req, res) => {
   </head>
   <body>
     <div class="box">
-      <h1>🚀 dataweb AI PRO</h1>
+      <h1>dataweb AI PRO</h1>
 
       <input id="msg" placeholder="Ask AI..." />
       <button onclick="chat()">Send</button>
@@ -298,10 +503,18 @@ app.get("/", (req, res) => {
         const r=await fetch("/mcp",{
           method:"POST",
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({tool:"chat",input:{message:msg}})
+          body:JSON.stringify({
+            jsonrpc:"2.0",
+            id:1,
+            method:"tools/call",
+            params:{
+              name:"chat",
+              arguments:{message:msg}
+            }
+          })
         });
         const d=await r.json();
-        document.getElementById("out").innerText=JSON.stringify(d.output,null,2);
+        document.getElementById("out").innerText=JSON.stringify(d,null,2);
       }
 
       new Chart(document.getElementById("c"),{
@@ -317,5 +530,4 @@ app.get("/", (req, res) => {
   `);
 });
 
-// ===== EXPORT =====
 export default app;
