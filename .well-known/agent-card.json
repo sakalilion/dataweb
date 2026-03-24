@@ -1,8 +1,8 @@
 {
   "name": "dataweb AI",
-  "description": "High-performance AI agent with reasoning, prediction, classification, and automation.",
+  "description": "MCP-compatible AI agent with tools, prompts, resources, and automation endpoints.",
   "url": "https://dataweb-sandy.vercel.app",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "author": "dataweb",
   "capabilities": [
     "chat",
@@ -10,10 +10,12 @@
     "reasoning",
     "prediction",
     "classification",
-    "generation"
+    "generation",
+    "mcp"
   ],
   "endpoints": {
-    "mcp": "https://dataweb-sandy.vercel.app/mcp"
+    "mcp": "https://dataweb-sandy.vercel.app/mcp",
+    "agentCard": "https://dataweb-sandy.vercel.app/.well-known/agent-card.json"
   },
   "skills": [
     {
