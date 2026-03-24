@@ -1,7 +1,7 @@
 {
   "name": "dataweb AI",
   "description": "High-performance AI agent with reasoning, prediction, classification, and automation.",
-  "url": "https://your-domain.vercel.app",
+  "url": "https://dataweb-sandy.vercel.app",
   "version": "1.0.0",
   "author": "dataweb",
   "capabilities": [
@@ -13,7 +13,7 @@
     "generation"
   ],
   "endpoints": {
-    "mcp": "https://your-domain.vercel.app/mcp"
+    "mcp": "https://dataweb-sandy.vercel.app/mcp"
   },
   "skills": [
     {
