@@ -1,7 +1,31 @@
 import express from "express";
+import fs from "fs";
+import path from "path";
 
 const app = express();
 app.use(express.json());
+
+// ===== SERVE A2A (WAJIB - FIX 404) =====
+app.get("/.well-known/agent-card.json", (req, res) => {
+  try {
+    const filePath = path.join(process.cwd(), ".well-known", "agent-card.json");
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        error: "agent-card.json not found"
+      });
+    }
+
+    res.setHeader("Content-Type", "application/json");
+    return res.sendFile(filePath);
+
+  } catch (err) {
+    return res.status(500).json({
+      error: "failed to load agent-card",
+      detail: err.message
+    });
+  }
+});
 
 // ===== HELPER =====
 const buildResponse = (result, extra = {}) => {
@@ -118,16 +142,12 @@ app.post("/mcp", async (req, res) => {
 
   try {
     if (tool === "chat") {
-      return res.json(
-        buildResponse(`AI Response: ${input.message}`)
-      );
+      return res.json(buildResponse(`AI Response: ${input.message}`));
     }
 
     if (tool === "summarize") {
       const short = input.text.slice(0, 120) + "...";
-      return res.json(
-        buildResponse(short)
-      );
+      return res.json(buildResponse(short));
     }
 
     if (tool === "analyze") {
@@ -186,5 +206,5 @@ app.get("/", (req, res) => {
   res.send("🚀 dataweb AI Agent is running");
 });
 
-// WAJIB untuk Vercel
+// ===== EXPORT (WAJIB) =====
 export default app;
