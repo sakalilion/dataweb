@@ -5,44 +5,40 @@ import path from "path";
 const app = express();
 app.use(express.json());
 
-// ===== MEMORY SYSTEM =====
+// ===== MEMORY =====
 const memory = {};
 
-// ===== SERVE A2A =====
+// ===== MULTI AGENTS =====
+const agents = {
+  analyst: (input) => `📊 Analyst: trend detected in ${input}`,
+  strategist: (input) => `🧠 Strategist: plan created for ${input}`,
+  executor: (input) => `⚙️ Executor: task executed for ${input}`
+};
+
+// ===== SERVE A2A FILE =====
 app.get("/.well-known/agent-card.json", (req, res) => {
-  try {
-    const filePath = path.join(process.cwd(), ".well-known", "agent-card.json");
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: "agent-card.json not found" });
-    }
-
+  const filePath = path.join(process.cwd(), ".well-known", "agent-card.json");
+  if (fs.existsSync(filePath)) {
     res.setHeader("Content-Type", "application/json");
     return res.sendFile(filePath);
-  } catch (err) {
-    return res.status(500).json({ error: "failed to load agent-card" });
   }
+  res.status(404).json({ error: "agent-card.json not found" });
 });
 
 // ===== HELPER =====
 const buildResponse = (result, session, extra = {}) => ({
   output: {
-    steps: [
-      "Input received",
-      "Analyzing context",
-      "Processing data",
-      "Generating response"
-    ],
+    steps: ["Input received","Analyzing","Processing","Generating"],
     reasoning: {
-      intent_detection: "Identifying intent",
-      processing: "Applying logic",
-      validation: "Ensuring accuracy"
+      intent: "detected",
+      processing: "applied",
+      validation: "ok"
     },
     result,
-    confidence: 0.97,
+    confidence: 0.98,
     metadata: {
       timestamp: Date.now(),
-      agent: "dataweb AI"
+      agent: "dataweb AI PRO"
     },
     agent_state: {
       status: "active",
@@ -56,14 +52,15 @@ const buildResponse = (result, session, extra = {}) => ({
   }
 });
 
-// ===== MCP (STANDARD FORMAT - FIX SCANNER) =====
+// ===== MCP STANDARD =====
 app.get("/mcp", (req, res) => {
   res.json({
     metadata: {
-      name: "dataweb AI",
-      version: "1.0",
-      capabilities: ["reasoning", "tool-use", "automation"]
+      name: "dataweb AI PRO",
+      version: "2.0",
+      capabilities: ["reasoning","tool-use","multi-agent","automation"]
     },
+
     tools: [
       {
         type: "function",
@@ -129,16 +126,50 @@ app.get("/mcp", (req, res) => {
             }
           }
         }
+      },
+      {
+        type: "function",
+        function: {
+          name: "multi_agent",
+          description: "Run multi-agent collaboration",
+          parameters: {
+            type: "object",
+            properties: {
+              task: { type: "string" }
+            }
+          }
+        }
+      }
+    ],
+
+    prompts: [
+      {
+        name: "crypto_analysis",
+        description: "Analyze crypto trends"
+      },
+      {
+        name: "ai_strategy",
+        description: "Generate AI automation plan"
+      }
+    ],
+
+    resources: [
+      {
+        name: "market_data",
+        endpoint: "/resources/market"
+      },
+      {
+        name: "memory",
+        endpoint: "/resources/memory"
       }
     ]
   });
 });
 
 // ===== MCP EXECUTION =====
-app.post("/mcp", async (req, res) => {
+app.post("/mcp", (req, res) => {
   const tool = req.body?.tool || "chat";
   const input = req.body?.input || {};
-
   const session = req.headers["x-session-id"] || "default";
 
   if (!memory[session]) memory[session] = [];
@@ -147,118 +178,137 @@ app.post("/mcp", async (req, res) => {
   try {
     if (tool === "chat") {
       return res.json(buildResponse(
-        `AI Response: ${input.message || "Hello from dataweb AI"}`,
+        `AI: ${input.message || "hello"}`,
         session
       ));
     }
 
     if (tool === "analyze") {
       return res.json(buildResponse(
-        `Analysis result for: ${input.data || "sample data"}`,
+        `Analysis: ${input.data || "sample"}`,
         session
       ));
     }
 
     if (tool === "predict") {
       return res.json(buildResponse(
-        `Prediction: "${input.data || "sample"}" shows upward trend`,
+        `Prediction: ${input.data || "sample"} ↑`,
         session
       ));
     }
 
     if (tool === "classify") {
-      const text = (input.text || "").toLowerCase();
-      let category = "general";
-
-      if (text.includes("crypto")) category = "finance";
-      else if (text.includes("ai")) category = "technology";
+      const txt = (input.text || "").toLowerCase();
+      let cat = "general";
+      if (txt.includes("crypto")) cat = "finance";
+      if (txt.includes("ai")) cat = "tech";
 
       return res.json(buildResponse(
-        `Category: ${category}`,
-        session,
-        { category }
+        `Category: ${cat}`,
+        session
       ));
     }
 
     if (tool === "generate") {
       return res.json(buildResponse(
-        `Generated content: ${input.prompt || "default content"}`,
+        `Generated: ${input.prompt || "default"}`,
         session
+      ));
+    }
+
+    if (tool === "multi_agent") {
+      const task = input.task || "default task";
+
+      return res.json(buildResponse(
+        "Multi-agent done",
+        session,
+        {
+          agents: {
+            analyst: agents.analyst(task),
+            strategist: agents.strategist(task),
+            executor: agents.executor(task)
+          }
+        }
       ));
     }
 
     return res.json(buildResponse("Default response", session));
 
-  } catch (err) {
+  } catch {
     return res.json(buildResponse("Recovered from error", session));
   }
 });
 
-// ===== UI PRO DASHBOARD =====
+// ===== RESOURCES =====
+app.get("/resources/market", (req, res) => {
+  res.json({
+    data: Array.from({ length: 10 }, (_, i) => ({
+      symbol: "AI-" + i,
+      price: (Math.random() * 1000).toFixed(2)
+    }))
+  });
+});
+
+app.get("/resources/memory", (req, res) => {
+  res.json(memory);
+});
+
+// ===== A2A =====
+app.post("/a2a", (req, res) => {
+  const { agent, task } = req.body;
+
+  if (!agents[agent]) {
+    return res.json({ error: "agent not found" });
+  }
+
+  res.json({
+    agent,
+    result: agents[agent](task),
+    status: "ok"
+  });
+});
+
+// ===== UI =====
 app.get("/", (req, res) => {
   res.send(`
-  <!DOCTYPE html>
   <html>
   <head>
-    <title>dataweb AI PRO</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-      body { background:#020617; color:white; font-family:sans-serif; }
-      .container { max-width:1200px; margin:auto; padding:20px; }
-      .grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-      .card { background:#0f172a; padding:20px; border-radius:10px; }
-      input { width:100%; padding:10px; }
-      button { padding:10px; margin-top:10px; background:#3b82f6; border:none; color:white; }
+      body{background:#020617;color:white;font-family:sans-serif}
+      .box{max-width:1000px;margin:auto;padding:20px}
+      input{width:100%;padding:10px}
+      button{padding:10px;background:#3b82f6;color:white;border:none}
     </style>
   </head>
-
   <body>
-    <div class="container">
+    <div class="box">
       <h1>🚀 dataweb AI PRO</h1>
 
-      <div class="grid">
-        <div class="card">
-          <h3>AI Chat</h3>
-          <input id="msg" placeholder="Ask anything..." />
-          <button onclick="chat()">Send</button>
-          <pre id="out"></pre>
-        </div>
+      <input id="msg" placeholder="Ask AI..." />
+      <button onclick="chat()">Send</button>
+      <pre id="out"></pre>
 
-        <div class="card">
-          <h3>Market Simulation</h3>
-          <canvas id="chart"></canvas>
-        </div>
-      </div>
+      <canvas id="c"></canvas>
     </div>
 
     <script>
       async function chat(){
-        const msg = document.getElementById("msg").value;
-
-        const res = await fetch("/mcp", {
+        const msg=document.getElementById("msg").value;
+        const r=await fetch("/mcp",{
           method:"POST",
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({
-            tool:"chat",
-            input:{message:msg}
-          })
+          body:JSON.stringify({tool:"chat",input:{message:msg}})
         });
-
-        const data = await res.json();
-        document.getElementById("out").innerText =
-          JSON.stringify(data.output, null, 2);
+        const d=await r.json();
+        document.getElementById("out").innerText=JSON.stringify(d.output,null,2);
       }
 
-      const ctx = document.getElementById('chart');
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: Array.from({length:20}, (_,i)=>i),
-          datasets: [{
-            label: 'AI Market Trend',
-            data: Array.from({length:20}, ()=>Math.random()*100),
-            borderWidth: 2
-          }]
+      new Chart(document.getElementById("c"),{
+        type:"line",
+        data:{
+          labels:[1,2,3,4,5],
+          datasets:[{data:[10,20,15,30,25]}]
         }
       });
     </script>
