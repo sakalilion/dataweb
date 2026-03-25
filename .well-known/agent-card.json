@@ -1,34 +1,73 @@
 {
-  "name": "dataweb AI",
-  "description": "MCP-compatible AI agent with tools, prompts, resources, and automation endpoints.",
-  "url": "https://dataweb-sandy.vercel.app",
-  "version": "2.1.0",
+  "name": "Dataweb AI Pro",
+  "description": "Single-profile MCP and A2A agent for research and market analysis.",
+  "url": "https://your-dataweb-deployment.vercel.app",
+  "version": "3.1.0",
   "author": "dataweb",
   "capabilities": [
-    "chat",
-    "tool-use",
-    "reasoning",
-    "prediction",
-    "classification",
-    "generation",
-    "mcp"
+    "mcp",
+    "a2a",
+    "tools",
+    "prompts",
+    "resources"
   ],
   "endpoints": {
-    "mcp": "https://dataweb-sandy.vercel.app/mcp",
-    "agentCard": "https://dataweb-sandy.vercel.app/.well-known/agent-card.json"
+    "mcp": "https://your-dataweb-deployment.vercel.app/mcp",
+    "a2a": "https://your-dataweb-deployment.vercel.app/a2a",
+    "agentCard": "https://your-dataweb-deployment.vercel.app/.well-known/agent-card.json"
   },
   "skills": [
     {
-      "name": "AI Chat",
-      "description": "Natural conversation"
+      "name": "market_research",
+      "description": "Research market structure, trend context, and positioning."
     },
     {
-      "name": "Prediction Engine",
-      "description": "Forecast outcomes"
+      "name": "crypto_analysis",
+      "description": "Build a structured crypto market analysis prompt."
     },
     {
-      "name": "Classification",
-      "description": "Categorize data"
+      "name": "ai_strategy",
+      "description": "Build a prompt for AI automation strategy work."
+    },
+    {
+      "name": "signal_scoring",
+      "description": "Score incoming signals by strength, risk, and timing."
+    },
+    {
+      "name": "narrative_mapping",
+      "description": "Map narratives, catalysts, and crowd attention shifts."
+    },
+    {
+      "name": "catalyst_tracking",
+      "description": "Track events that can move sentiment or price."
+    },
+    {
+      "name": "competitor_scan",
+      "description": "Compare projects, categories, or market leaders quickly."
+    },
+    {
+      "name": "thesis_builder",
+      "description": "Turn rough ideas into an investment or research thesis."
+    },
+    {
+      "name": "macro_brief",
+      "description": "Summarize macro conditions affecting crypto markets."
+    },
+    {
+      "name": "token_compare",
+      "description": "Compare two or more assets across key decision factors."
+    },
+    {
+      "name": "portfolio_watch",
+      "description": "Monitor portfolio themes and surface notable changes."
+    },
+    {
+      "name": "risk_digest",
+      "description": "Produce a concise downside-risk and invalidation brief."
+    },
+    {
+      "name": "memo_writer",
+      "description": "Write polished research notes and internal summaries."
     }
   ]
 }
